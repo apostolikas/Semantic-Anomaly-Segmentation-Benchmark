@@ -1,0 +1,33 @@
+# Data parameters
+experiment_name: 'local_equal_net'
+dataset_name: pvoc # [mnist, fashionmnist, cifar10, mvtec, retina]
+last_checkpoint: 1
+
+
+# Training parameters
+num_epochs: 100 # mnist/fashionmnist:51, cifar10:201, mvtec:601
+batch_size: 64
+learning_rate: 1e-3
+mvtec_img_size: 128
+
+normal_class: 0 #3 # mvtec:'capsule', mnist:3
+#self.label_mapping = {'aeroplane':0, 'person':1, 'tvmonitor':2, 'dog':3, 'chair':4, 'bird':5, 'bottle':6, 'boat':7, 
+#                 'diningtable':8, 'train':9, 'motorbike':10, 'horse':11, 'cow':12, 'bicycle':13, 'car':14, 'cat':15, 
+#                 'sofa':16, 'bus':17, 'pottedplant':18, 'sheep':19}
+
+lamda: 0.01 # mvtec:0.5, Others:0.01
+
+
+pretrain: True # True:use pre-trained vgg as source network --- False:use random initialize
+use_bias: False # True:using bias term in neural network layer
+equal_network_size: False # True:using equal network size for cloner and source network --- False:smaller network for cloner
+direction_loss_only: False
+continue_train: False
+
+
+# Test parameters
+localization_test: False # True:For Localization Test --- False:For Detection
+localization_method: 'gbp' # gradients , smooth_grad , gbp
+
+
+
