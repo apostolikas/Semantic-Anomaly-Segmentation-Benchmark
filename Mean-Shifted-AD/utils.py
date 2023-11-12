@@ -14,6 +14,7 @@ import torch.nn as nn
 import math
 from data import PascalVOCDataModule
 import warnings
+from timm.models.vision_transformer import vit_small_patch16_224, vit_base_patch16_224
 
 BICUBIC = InterpolationMode.BICUBIC
 
@@ -279,7 +280,7 @@ def vit_base(patch_size=16, **kwargs):
         patch_size=patch_size, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4,
         qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model
-
+    
 
 class GaussianBlur(object):
     """Gaussian blur augmentation in SimCLR https://arxiv.org/abs/2002.05709"""
@@ -371,7 +372,16 @@ class Model(torch.nn.Module):
         elif backbone == 'vit-small':
             self.backbone = vit_small(pretrained=True)
         elif backbone == 'vit-base':
-            self.backbone = vit_base(pretrained=True)
+            
+            # Random init
+            self.backbone = vit_base(pretrained=False)
+            #self.backbone = vit_base(pretrained=True)
+
+            # Pretrained init
+            # pretraining = vit_base_patch16_224(pretrained=True)
+            # self.backbone = vit_base(pretraining=True)
+            # self.backbone.load_state_dict(pretraining.state_dict(), strict=False)
+
         elif backbone == 'dino-small':
             self.backbone = torch.hub.load('facebookresearch/dino:main', 'dino_vits16')
         elif backbone == 'dino-base':
@@ -438,9 +448,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
         ds = torchvision.datasets.CIFAR10
         transform = transform_color if backbone == "152" else transform_resnet18
         coarse = {}
-        trainset = ds(root='./data', train=True, download=True, transform=transform, **coarse)
-        testset = ds(root='./data', train=False, download=True, transform=transform, **coarse)
-        trainset_1 = ds(root='./data', train=True, download=True, transform=Transform(), **coarse)
+        trainset = ds(root='./temp_data', train=True, download=True, transform=transform, **coarse)
+        testset = ds(root='./temp_data', train=False, download=True, transform=transform, **coarse)
+        trainset_1 = ds(root='./temp_data', train=True, download=True, transform=Transform(), **coarse)
         idx = np.isin(trainset.targets, label_class)
         testset.targets = [int(t not in label_class) for t in testset.targets]
         trainset.data = trainset.data[idx]
@@ -457,9 +467,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
 
     elif dataset == "cifar100":
         transform = transform_color if backbone == "152" else transform_resnet18
-        trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform)
-        trainset_1 = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=Transform())
+        trainset = torchvision.datasets.CIFAR100(root='./temp_data', train=True, download=True, transform=transform)
+        testset = torchvision.datasets.CIFAR100(root='./temp_data', train=False, download=True, transform=transform)
+        trainset_1 = torchvision.datasets.CIFAR100(root='./temp_data', train=True, download=True, transform=Transform())
         trainset.targets = sparse2coarse(trainset.targets)
         testset.targets = sparse2coarse(testset.targets)
         trainset_1.targets = sparse2coarse(trainset.targets)
@@ -477,9 +487,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
                                                                       shuffle=True, num_workers=2, drop_last=False)
 
     elif dataset == "mnist":
-        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
-        trainset_1 = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=TransformMNIST())
+        trainset = torchvision.datasets.MNIST(root='./temp_data', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.MNIST(root='./temp_data', train=False, download=True, transform=transform_mnist)
+        trainset_1 = torchvision.datasets.MNIST(root='./temp_data', train=True, download=True, transform=TransformMNIST())
         idx = np.isin(trainset.targets, label_class)
         testset.targets = [int(t not in label_class) for t in testset.targets]
         trainset.data = trainset.data[idx]
@@ -495,9 +505,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
 
 
     elif dataset == "fmnist":
-        trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_mnist)
-        testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=True, transform=transform_mnist)
-        trainset_1 = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=TransformMNIST())
+        trainset = torchvision.datasets.FashionMNIST(root='./temp_data', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.FashionMNIST(root='./temp_data', train=False, download=True, transform=transform_mnist)
+        trainset_1 = torchvision.datasets.FashionMNIST(root='./temp_data', train=True, download=True, transform=TransformMNIST())
         idx = np.isin(trainset.targets, label_class)
         testset.targets = [int(t not in label_class) for t in testset.targets]
         trainset.data = trainset.data[idx]
