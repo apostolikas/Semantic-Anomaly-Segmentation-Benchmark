@@ -105,7 +105,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--dataset', default='mnist', help='Choose dataset')
+    parser.add_argument('--dataset', default='pvoc', help='Choose dataset')
     parser.add_argument('--epochs', default=10, type=int, metavar='epochs', help='number of epochs')
     parser.add_argument('--lr', type=float, default=1e-5, help='The initial learning rate.')
     parser.add_argument('--batch_size', default=32, type=int)
@@ -123,26 +123,23 @@ if __name__ == "__main__":
     aucs = []
 
     # Unimodal settings
-    for _class in num_classes:
-        args.label = [_class]
-        print(f"Normal labels : {args.label}")
-        auc = main(args)
-        aucs.append(auc)
-    print("AUCs: ", aucs)
-    print("Average AUC: ", sum(aucs)/len(aucs))
-
-
-    # Multimodal settings
-    # for abnormal_class in num_classes:
-    #     args.label = list(num_classes)
-    #     args.label.pop(abnormal_class)
-    #     print(f"Normal labels {args.label} | Anomaly label {abnormal_class}")
+    # for _class in num_classes:
+    #     args.label = [_class]
+    #     print(f"Normal labels : {args.label}")
     #     auc = main(args)
     #     aucs.append(auc)
     # print("AUCs: ", aucs)
     # print("Average AUC: ", sum(aucs)/len(aucs))
 
 
-    
+    # Multimodal settings
+    for abnormal_class in num_classes:
+        args.label = list(num_classes)
+        args.label.pop(abnormal_class)
+        print(f"Normal labels {args.label} | Anomaly label {abnormal_class}")
+        auc = main(args)
+        aucs.append(auc)
+    print("AUCs: ", aucs)
+    print("Average AUC: ", sum(aucs)/len(aucs))
 
-ß
+
