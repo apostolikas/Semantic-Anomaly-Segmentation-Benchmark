@@ -5,7 +5,7 @@ from test_functions import detection_test, localization_test
 from models.network import get_networks
 
 parser = ArgumentParser()
-parser.add_argument('--config', type=str, default='configs/config.yaml', help="training configuration")
+parser.add_argument('--config', type=str, default='./KDAD/configs/config.yaml', help="training configuration")
 
 
 def main():
