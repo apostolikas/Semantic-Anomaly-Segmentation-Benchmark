@@ -8,21 +8,27 @@ from test_functions import detection_test
 from loss_functions import *
 from argparse import ArgumentParser
 from models.network import get_networks
-from pvoc import PascalVOCDataModule
 
 parser = ArgumentParser()
-parser.add_argument('--config', type=str, default='/home/napostol/Semantic-Anomaly-Segmentation-Benchmark/KDAD/configs/config.yaml', help="training configuration")
+parser.add_argument('--config', type=str, default='./KDAD/configs/config.yaml', help="training configuration")
 
 
-def train(config, train_dataloader, test_dataloader, normal_class):
+def train(config):
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     direction_loss_only = config["direction_loss_only"]
+    normal_class = config["normal_class"]
     learning_rate = float(config['learning_rate'])
     num_epochs = config["num_epochs"]
     lamda = config['lamda']
     continue_train = config['continue_train']
+    last_checkpoint = config['last_checkpoint']
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    train_dataloader, test_dataloader = load_data(config)
+
+    checkpoint_path = "./outputs/{}/{}/checkpoints/".format(config['experiment_name'], config['dataset_name'])
+    Path(checkpoint_path).mkdir(parents=True, exist_ok=True)
 
     if continue_train:
         vgg, model = get_networks(config, load_checkpoint=True)
@@ -39,11 +45,20 @@ def train(config, train_dataloader, test_dataloader, normal_class):
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    if continue_train:
+        optimizer.load_state_dict(
+            torch.load('{}Opt_{}_epoch_{}.pth'.format(checkpoint_path, normal_class, last_checkpoint)))
+
+    losses = []
+    roc_aucs = []
+    if continue_train:
+        with open('{}Auc_{}_epoch_{}.pickle'.format(checkpoint_path, normal_class, last_checkpoint), 'rb') as f:
+            roc_aucs = pickle.load(f)
 
     for epoch in range(num_epochs):
         model.train()
         epoch_loss = 0
-        for data in train_dataloader:
+        for data,_ in train_dataloader:
             images = data.to(device)
             output_pred = model.forward(images)
             output_real = vgg(images)
@@ -52,35 +67,28 @@ def train(config, train_dataloader, test_dataloader, normal_class):
             optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
-    print(f"Epoch {epoch+1} Loss: {epoch_loss}")
 
-    roc_auc = detection_test(model, vgg, test_dataloader, normal_class)
-    print(f"Normal Class: {normal_class} Test AUC: {roc_auc}")
+        print('epoch [{}/{}], loss:{:.4f}'.format(epoch + 1, num_epochs, epoch_loss))
 
-    return roc_auc
+        if epoch % 10 == 0:
+            roc_auc = detection_test(model, vgg, test_dataloader, config)
+            roc_aucs.append(roc_auc)
+            print("RocAUC at epoch {}:".format(epoch+1), roc_auc)
+
+        if epoch % 50 == 0:
+            torch.save(model.state_dict(),
+                        '{}Cloner_{}_epoch_{}.pth'.format(checkpoint_path, normal_class, epoch))
+            torch.save(optimizer.state_dict(),
+                        '{}Opt_{}_epoch_{}.pth'.format(checkpoint_path, normal_class, epoch))
+            with open('{}Auc_{}_epoch_{}.pickle'.format(checkpoint_path, normal_class, epoch),
+                        'wb') as f:
+                pickle.dump(roc_aucs, f)
 
 
 def main():
-    test_aucs = []
-    for normal_class in range(20):
-        print(f"Normal Class : {normal_class}")
-        args = parser.parse_args()
-        config = get_config(args.config)
-
-        train_transform= transforms.Compose([
-                    transforms.Resize((224, 224)),
-                    transforms.ToTensor(),
-            ])
-        normal_classes = [normal_class]
-        mod = PascalVOCDataModule(batch_size=32, train_transform=train_transform, val_transform=train_transform, test_transform=train_transform, normal_classes = normal_classes)
-        train_dataloader = mod.get_train_dataloader()
-        test_dataloader = mod.get_test_dataloader()
-
-        test_auc = train(config, train_dataloader, test_dataloader, normal_class)
-        test_aucs.append(test_auc)
-
-    print(f"Test AUCs: {test_aucs}")
-    print(f"Average Test AUC: {sum(test_aucs)/len(test_aucs)}")
+    args = parser.parse_args()
+    config = get_config(args.config)
+    train(config)
 
 if __name__ == '__main__':
     main()
