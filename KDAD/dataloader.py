@@ -143,7 +143,7 @@ class VOCDataset(Dataset):
 
 class PascalVOCDataModule():
 
-    def __init__(self, batch_size, normal_classes, train_transform, test_transform,  img_dir="/var/scratch/napostol/VOCSegmentation", num_workers=2) -> None:
+    def __init__(self, batch_size, normal_classes, train_transform, test_transform,  img_dir="./VOCSegmentation", num_workers=2) -> None:
         super().__init__()
         self.num_workers = num_workers
         self.batch_size = batch_size
@@ -159,12 +159,12 @@ class PascalVOCDataModule():
         self.image_folder = [self.mapping[normal_class] for normal_class in self.normal_classes]
 
         if len(self.image_folder) == 1:
-            self.train_dir = f"/var/scratch/napostol/data_voc/{self.image_folder[0]}"
+            self.train_dir = f"./data_voc/{self.image_folder[0]}"
             self.train_dataset = FolderData(self.train_dir, transform=self.image_train_transform)
         else:
             normal_data = []
             for folder in self.image_folder:
-                self.train_dir = f"/var/scratch/napostol/data_voc/{folder}"
+                self.train_dir = f"./data_voc/{folder}"
                 normal_data.append(FolderData(self.train_dir, transform=self.image_train_transform))
             self.train_dataset = ConcatDataset(normal_data)
 
