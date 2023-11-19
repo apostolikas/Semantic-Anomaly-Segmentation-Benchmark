@@ -1,11 +1,9 @@
 import torch
-from dataset import get_data_transforms, load_data
 from torchvision.datasets import ImageFolder
 import numpy as np
 from torch.utils.data import DataLoader
 from resnet import resnet18, resnet34, resnet50, wide_resnet50_2
 from de_resnet import de_resnet18, de_resnet50, de_wide_resnet50_2
-from dataset import MVTecDataset
 from torch.nn import functional as F
 from sklearn.metrics import roc_auc_score,roc_curve
 import cv2
@@ -22,11 +20,10 @@ from scipy.spatial.distance import pdist
 import matplotlib
 import pickle
 from torchvision import transforms
-from dataset import PascalVOCDataset
 import torchvision.transforms as tv
 from PIL import Image
 from matplotlib import cm
-
+from dataset import *
 
 def cal_anomaly_map(fs_list, ft_list, out_size=224, amap_mode='mul'):
     if amap_mode == 'mul':
@@ -84,9 +81,14 @@ def loss_concat(a, b):
     return loss
 
 
-# My evaluation function
+# Our custom evaluation function
 
-def my_eval(encoder, bn, decoder, dataloader,device):
+def custom_eval(encoder, bn, decoder, dataset_name , _class, device):
+
+    print(f"Evaluation for normal class {_class} on dataset {dataset_name} ...")
+
+    _ , dataloader = load_data(dataset_name = dataset_name, normal_class = _class , batch_size = 32)
+
     bn.eval()
     decoder.eval()
     label_score = []
@@ -108,46 +110,24 @@ def my_eval(encoder, bn, decoder, dataloader,device):
     return roc_auc   
 
 
-def evaluate_model(encoder, bn, decoder, dataloader,device,_class_=None):
-    bn.eval()
-    decoder.eval()
-    gt_list_px = []
-    pr_list_px = []
-    with torch.no_grad():
-        for img, gt, _ in dataloader:
-
-            img = img.to(device)
-            inputs = encoder(img)
-            outputs = decoder(bn(inputs))
-            anomaly_map, _ = cal_anomaly_map(inputs, outputs, img.shape[-1], amap_mode='a')
-            anomaly_map = gaussian_filter(anomaly_map, sigma=4)
-            gt[gt > 0.5] = 1
-            gt[gt <= 0.5] = 0
-            gt_list_px.extend(gt.cpu().numpy().astype(int).ravel())
-            pr_list_px.extend(anomaly_map.ravel())
-
-        auroc_px = round(roc_auc_score(gt_list_px, pr_list_px), 3)
-
-    return auroc_px
-
-
-
 # Their evaluation function
 
 def evaluation(encoder, bn, decoder, dataloader,device,_class_=None):
+    #_, t_bn = resnet50(pretrained=True)
+    #bn.load_state_dict(bn.state_dict())
     bn.eval()
+    #bn.training = False
+    #t_bn.to(device)
+    #t_bn.load_state_dict(bn.state_dict())
     decoder.eval()
     gt_list_px = []
     pr_list_px = []
-
-    label_score = []
-
+    gt_list_sp = []
+    pr_list_sp = []
+    aupro_list = []
     with torch.no_grad():
-        for sample in dataloader:
-            img = sample[0][0].unsqueeze(0)
-            gt = sample[0][0].unsqueeze(0)
-            #img = img.repeat(1,3,1,1)
-            gt = tv.functional.rgb_to_grayscale(gt)
+        for img, gt, label, _ in dataloader:
+
             img = img.to(device)
             inputs = encoder(img)
             outputs = decoder(bn(inputs))
@@ -155,34 +135,38 @@ def evaluation(encoder, bn, decoder, dataloader,device,_class_=None):
             anomaly_map = gaussian_filter(anomaly_map, sigma=4)
             gt[gt > 0.5] = 1
             gt[gt <= 0.5] = 0
+            if label.item()!=0:
+                aupro_list.append(compute_pro(gt.squeeze(0).cpu().numpy().astype(int),
+                                              anomaly_map[np.newaxis,:,:]))
             gt_list_px.extend(gt.cpu().numpy().astype(int).ravel())
             pr_list_px.extend(anomaly_map.ravel())
+            gt_list_sp.append(np.max(gt.cpu().numpy().astype(int)))
+            pr_list_sp.append(np.max(anomaly_map))
+
+        #ano_score = (pr_list_sp - np.min(pr_list_sp)) / (np.max(pr_list_sp) - np.min(pr_list_sp))
+        #vis_data = {}
+        #vis_data['Anomaly Score'] = ano_score
+        #vis_data['Ground Truth'] = np.array(gt_list_sp)
+        # print(type(vis_data))
+        # np.save('vis.npy',vis_data)
+        #with open('{}_vis.pkl'.format(_class_), 'wb') as f:
+        #    pickle.dump(vis_data, f, pickle.HIGHEST_PROTOCOL)
+
+
         auroc_px = round(roc_auc_score(gt_list_px, pr_list_px), 3)
-        return auroc_px
-
-
+        auroc_sp = round(roc_auc_score(gt_list_sp, pr_list_sp), 3)
+    return auroc_px, auroc_sp, round(np.mean(aupro_list),3)
 
 def test(_class_):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(device)
     print(_class_)
 
-    #data_transform, gt_transform = get_data_transforms(256, 256)
-    #test_path = '../mvtec/' + _class_
+    data_transform, gt_transform = get_data_transforms(256, 256)
+    test_path = '../mvtec/' + _class_
     ckp_path = './checkpoints/' + 'rm_1105_wres50_ff_mm_' + _class_ + '.pth'
-    # test_data = MVTecDataset(root=test_path, transform=data_transform, gt_transform=gt_transform, phase="test")
-    # test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False)
-
-
-    orig_transform = transforms.Compose([
-        transforms.Resize([224, 224]),
-        transforms.ToTensor()
-    ])
-    test_set = PascalVOCDataset('../VOCdevkit/VOC2012', 'val', transforms=orig_transform)  
-    ckp_path = './checkpoints/' + 'wres50_'+_class_+'.pth'
-    test_dataloader = torch.utils.data.DataLoader(test_set, batch_size=1, shuffle=False)
-
-
+    test_data = MVTecDataset(root=test_path, transform=data_transform, gt_transform=gt_transform, phase="test")
+    test_dataloader = torch.utils.data.DataLoader(test_data, batch_size=1, shuffle=False)
     encoder, bn = wide_resnet50_2(pretrained=True)
     encoder = encoder.to(device)
     bn = bn.to(device)
