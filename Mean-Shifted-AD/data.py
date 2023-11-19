@@ -7,6 +7,8 @@ from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 import torch
 import lxml.etree as ET
+from torchvision.datasets import CocoDetection
+from pycocotools.coco import COCO
 
 
 class FolderData(Dataset):
@@ -197,33 +199,99 @@ class PascalVOCDataModule():
     
     def get_num_classes(self):
         return 20
+
+
+class CocoDataset(CocoDetection):
+    def __init__(self, root, annFile, normal_classes, transform=None, target_transform=None, train=True):
+        super().__init__(root, annFile, transform, target_transform)
+        self.coco = COCO(annFile)
+        self.ids = list(sorted(self.coco.imgs.keys()))
+        self.normal_classes = normal_classes
+        self.normal_subset_indices = self.filter_by_category(normal_classes)
+        self.train = train
+        self.transform = transform
+        self.target_transform = target_transform
+        self.targets = []
+        for i in range(len(self.ids)):
+            if self.ids[i] in self.normal_subset_indices:
+                self.targets.append(0)
+            else:
+                self.targets.append(1)
+        
+
+    def __getitem__(self, index):
+        if self.train == True:
+            id = self.normal_subset_indices[index]
+        else:
+            id = self.ids[index]
+        image = self._load_image(id)
+        target = self._load_target(id)
+
+        if self.transform is not None:
+            image = self.transform(image)
+        
+        if id in self.normal_subset_indices:
+            target = torch.Tensor([0])
+        else:
+            target = torch.Tensor([1])
+
+        return image, target
+
+    def _load_image(self, id):
+        path = self.coco.loadImgs(id)[0]["file_name"]
+        return Image.open(os.path.join(self.root, path)).convert("RGB")
+
+    def _load_target(self, id):
+        return self.coco.loadAnns(self.coco.getAnnIds(id))
+
+    def filter_by_category(self, category_ids):
+        subset_indices = []
+        img_ids = list(self.coco.imgs.keys())  # Get all image IDs
+
+        for img_id in img_ids:
+            ann_ids = self.coco.getAnnIds(imgIds=img_id, catIds=category_ids, iscrowd=None)
+            annotations = self.coco.loadAnns(ann_ids)
+            if len(annotations) > 0:
+                subset_indices.append(self.coco.imgs[img_id]['id'])
+        return subset_indices
+
+    def __len__(self):
+        if self.train == True:
+            return len(self.normal_subset_indices)
+        else:
+            return len(self.ids)
+
+
+class Coco_Handler(Dataset):
+    def __init__(self, batch_size, normal_classes, transformations, num_workers):
+        self.batch_size = batch_size
+        self.normal_classes = normal_classes
+        self.num_workers = num_workers
+        self.dataset_name = "Coco"
+        self.num_classes = 80
+        self.transform = transformations
+        self.train_dataset = CocoDataset(root="./train2014", annFile="./annotations/instances_train2014.json", normal_classes=normal_classes, transform=transformations, train=True)
+        self.test_dataset = CocoDataset(root="./val2014", annFile="./annotations/instances_val2014.json", normal_classes=normal_classes, transform=transformations, train=False)
+        self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        self.test_loader = torch.utils.data.DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        print(f"Train set size : {len(self.train_dataset)}")
+        print(f"Test set size : {len(self.test_dataset)}")
+
+    def get_train_loader(self):
+        return self.train_loader
     
-
-# if __name__ == "__main__":
-#     train_transform= transforms.Compose([
-#             transforms.Resize((224, 224)),
-#             transforms.ToTensor(),
-#         ])
-
-#     mod = PascalVOCDataModule(batch_size=1, train_transform=train_transform, val_transform=train_transform, test_transform=train_transform, normal_classes = [0,1])
-#     train_dataloader = mod.get_train_dataloader()
-#     val_dataloader = mod.get_val_dataloader()
-#     test_dataloader = mod.get_test_dataloader()
-
-
-#     for batch in train_dataloader:
-#         img = batch
-#         print(img.shape)
-#         break
-
-#     for batch in val_dataloader:
-#         img,labels = batch
-#         print(img.shape)
-#         print(labels)
-#         break
-
-#     for batch in test_dataloader:
-#         img,labels = batch
-#         print(img.shape)
-#         print(labels)
-#         break
+    def get_test_loader(self):
+        return self.test_loader
+    
+    def get_train_dataset(self):
+        return self.train_dataset
+    
+    def get_test_dataset(self):
+        return self.test_dataset
+    
+    def get_num_classes(self):
+        return self.num_classes
+    
+    def get_dataset_name(self):
+        return self.dataset_name
+    
