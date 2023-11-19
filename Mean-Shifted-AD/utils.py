@@ -12,7 +12,7 @@ import math
 from functools import partial
 import torch.nn as nn
 import math
-from data import PascalVOCDataModule
+from data import PascalVOCDataModule, Coco_Handler
 import warnings
 from timm.models.vision_transformer import vit_small_patch16_224, vit_base_patch16_224
 
@@ -373,14 +373,13 @@ class Model(torch.nn.Module):
             self.backbone = vit_small(pretrained=True)
         elif backbone == 'vit-base':
             
-            # Random init
-            self.backbone = vit_base(pretrained=False)
-            #self.backbone = vit_base(pretrained=True)
+            ### Random init ###
+            # self.backbone = vit_base(pretrained=False)
 
-            # Pretrained init
-            # pretraining = vit_base_patch16_224(pretrained=True)
-            # self.backbone = vit_base(pretraining=True)
-            # self.backbone.load_state_dict(pretraining.state_dict(), strict=False)
+            ### Pretrained init ###
+            pretraining = vit_base_patch16_224(pretrained=True)
+            self.backbone = vit_base(pretraining=True)
+            self.backbone.load_state_dict(pretraining.state_dict(), strict=False)
 
         elif backbone == 'dino-small':
             self.backbone = torch.hub.load('facebookresearch/dino:main', 'dino_vits16')
@@ -448,9 +447,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
         ds = torchvision.datasets.CIFAR10
         transform = transform_color if backbone == "152" else transform_resnet18
         coarse = {}
-        trainset = ds(root='./temp_data', train=True, download=True, transform=transform, **coarse)
-        testset = ds(root='./temp_data', train=False, download=True, transform=transform, **coarse)
-        trainset_1 = ds(root='./temp_data', train=True, download=True, transform=Transform(), **coarse)
+        trainset = ds(root='./MSAD_Datasets', train=True, download=True, transform=transform, **coarse)
+        testset = ds(root='./MSAD_Datasets', train=False, download=True, transform=transform, **coarse)
+        trainset_1 = ds(root='./MSAD_Datasets', train=True, download=True, transform=Transform(), **coarse)
         idx = np.isin(trainset.targets, label_class)
         testset.targets = [int(t not in label_class) for t in testset.targets]
         trainset.data = trainset.data[idx]
@@ -467,9 +466,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
 
     elif dataset == "cifar100":
         transform = transform_color if backbone == "152" else transform_resnet18
-        trainset = torchvision.datasets.CIFAR100(root='./temp_data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR100(root='./temp_data', train=False, download=True, transform=transform)
-        trainset_1 = torchvision.datasets.CIFAR100(root='./temp_data', train=True, download=True, transform=Transform())
+        trainset = torchvision.datasets.CIFAR100(root='./MSAD_Datasets', train=True, download=True, transform=transform)
+        testset = torchvision.datasets.CIFAR100(root='./MSAD_Datasets', train=False, download=True, transform=transform)
+        trainset_1 = torchvision.datasets.CIFAR100(root='./MSAD_Datasets', train=True, download=True, transform=Transform())
         trainset.targets = sparse2coarse(trainset.targets)
         testset.targets = sparse2coarse(testset.targets)
         trainset_1.targets = sparse2coarse(trainset.targets)
@@ -487,9 +486,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
                                                                       shuffle=True, num_workers=2, drop_last=False)
 
     elif dataset == "mnist":
-        trainset = torchvision.datasets.MNIST(root='./temp_data', train=True, download=True, transform=transform_mnist)
-        testset = torchvision.datasets.MNIST(root='./temp_data', train=False, download=True, transform=transform_mnist)
-        trainset_1 = torchvision.datasets.MNIST(root='./temp_data', train=True, download=True, transform=TransformMNIST())
+        trainset = torchvision.datasets.MNIST(root='./MSAD_Datasets', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.MNIST(root='./MSAD_Datasets', train=False, download=True, transform=transform_mnist)
+        trainset_1 = torchvision.datasets.MNIST(root='./MSAD_Datasets', train=True, download=True, transform=TransformMNIST())
         idx = np.isin(trainset.targets, label_class)
         testset.targets = [int(t not in label_class) for t in testset.targets]
         trainset.data = trainset.data[idx]
@@ -505,9 +504,9 @@ def get_loaders(dataset, label_class, batch_size, backbone):
 
 
     elif dataset == "fmnist":
-        trainset = torchvision.datasets.FashionMNIST(root='./temp_data', train=True, download=True, transform=transform_mnist)
-        testset = torchvision.datasets.FashionMNIST(root='./temp_data', train=False, download=True, transform=transform_mnist)
-        trainset_1 = torchvision.datasets.FashionMNIST(root='./temp_data', train=True, download=True, transform=TransformMNIST())
+        trainset = torchvision.datasets.FashionMNIST(root='./MSAD_Datasets', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.FashionMNIST(root='./MSAD_Datasets', train=False, download=True, transform=transform_mnist)
+        trainset_1 = torchvision.datasets.FashionMNIST(root='./MSAD_Datasets', train=True, download=True, transform=TransformMNIST())
         idx = np.isin(trainset.targets, label_class)
         testset.targets = [int(t not in label_class) for t in testset.targets]
         trainset.data = trainset.data[idx]
@@ -532,7 +531,19 @@ def get_loaders(dataset, label_class, batch_size, backbone):
         train_loader1 = mod1.get_train_dataloader(batch_size = batch_size)
 
         return train_loader, test_loader, train_loader1
-    
+
+    elif dataset == "coco":
+        
+        transform = transform_color if backbone == "152" else transform_resnet18
+        mod = Coco_Handler(batch_size = batch_size, normal_classes = label_class, transformations=transform, num_workers=2)
+        mod1 = Coco_Handler(batch_size = batch_size, normal_classes = label_class, transformations = Transform(), num_workers=2)
+
+        train_loader = mod.get_train_loader()
+        test_loader = mod.get_test_loader()
+        train_loader1 = mod1.get_train_loader()
+        
+        return train_loader, test_loader, train_loader1
+
     else:
         print('Unsupported Dataset')
         exit()
