@@ -378,7 +378,7 @@ class Model(torch.nn.Module):
 
             ### Pretrained init ###
             pretraining = vit_base_patch16_224(pretrained=True)
-            self.backbone = vit_base(pretraining=True)
+            self.backbone = vit_base(pretrained=True)
             self.backbone.load_state_dict(pretraining.state_dict(), strict=False)
 
         elif backbone == 'dino-small':
