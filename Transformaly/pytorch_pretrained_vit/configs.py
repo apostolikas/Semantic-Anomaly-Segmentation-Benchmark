@@ -15,21 +15,6 @@ def get_base_config():
       classifier='token'
     )
 
-def get_s16_config():
-    """Returns the ViT-S/16 configuration."""
-    config = get_base_config()
-    config.update(dict(
-        patches=(16, 16),
-        dim=384,
-        ff_dim=1536,
-        num_heads=6,
-        num_layers=12,
-        attention_dropout_rate=0.0,
-        dropout_rate=0.1,
-        representation_size=384
-    ))
-    return config
-
 def get_b16_config():
     """Returns the ViT-B/16 configuration."""
     config = get_base_config()
@@ -69,12 +54,6 @@ def drop_head_variant(config):
 
 
 PRETRAINED_MODELS = {
-    'S_16': {
-      'config': get_s16_config(),
-      'num_classes': 21843,
-      'image_size': (224, 224),
-      'url': "https://storage.googleapis.com/vit_models/augreg/S_16-i1k-300ep-lr_0.001-aug_medium2-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz"
-    },
     'B_16': {
       'config': get_b16_config(),
       'num_classes': 21843,

@@ -4,7 +4,7 @@
 import numpy as np
 import torch
 from torch.utils import model_zoo
-from timm.models.vision_transformer import vit_small_patch16_224
+
 from .configs import PRETRAINED_MODELS
 
 
@@ -16,7 +16,7 @@ def load_pretrained_weights(
     load_fc=True, 
     load_repr_layer=False,
     resize_positional_embedding=False,
-    verbose=False,
+    verbose=True,
     strict=True,
 ):
     """Loads pretrained weights from weights path or download using url.
@@ -34,9 +34,6 @@ def load_pretrained_weights(
     assert bool(model_name) ^ bool(weights_path), 'Expected exactly one of model_name or weights_path'
     
     # Load or download weights
-    #pretraining = vit_small_patch16_224(pretrained=True)
-    #state_dict = torch.load(pretraining.state_dict())
-    
     if weights_path is None:
         url = PRETRAINED_MODELS[model_name]['url']
         if url:
