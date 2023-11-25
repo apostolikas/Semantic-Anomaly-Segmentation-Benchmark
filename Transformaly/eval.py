@@ -9,7 +9,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn import mixture
 import torch.nn
-from Transformaly.my_utils import print_and_add_to_log, get_datasets_for_ViT, \
+from utils import print_and_add_to_log, get_datasets_for_ViT, \
     Identity, get_finetuned_features
 from pytorch_pretrained_vit.model import AnomalyViT
 
