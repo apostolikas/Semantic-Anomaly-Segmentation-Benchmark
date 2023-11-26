@@ -8,7 +8,7 @@ from utils.utils import *
 from dataloader import *
 
 parser = ArgumentParser()
-parser.add_argument('--config', type=str, default='configs/config_test.yaml', help="training configuration")
+parser.add_argument('--config', type=str, default='./Puzzle_AD/configs/config_test.yaml', help="training configuration")
 
 
 def find_fpr(fpr, tpr, tpr_target):
