@@ -10,10 +10,9 @@ from models.Unet import *
 from models.Discriminator import *
 from torch.autograd import Variable
 from test import find_fpr, test, get_avg_val_error_per_permutation
-from pvoc_data import PascalVOCDataModule
 
 parser = ArgumentParser()
-parser.add_argument('--config', type=str, default='/home/napostol/Seemantic-Anomaly-Segmentation-Benchmark/Puzzle_AD/configs/config_train.yaml', help="training configuration")
+parser.add_argument('--config', type=str, default='./Puzzle_AD/configs/config_train.yaml', help="training configuration")
 
 def main(train_dataloader, test_dataloader, target_class):
 
@@ -141,6 +140,21 @@ def main(train_dataloader, test_dataloader, target_class):
 
         print(f"epoch [{epoch+1}/{num_epochs}], epoch_total_loss:{epoch_total_loss:.4f}, epoch_ae_loss:{epoch_ae_loss:.4f}")
 
+        # with open(checkpoint_path + 'log_{}.txt'.format(normal_class), "a") as log_file:
+        #     log_file.write('\n epoch [{}/{}], loss:{:.4f}, epoch_ae_loss:{:.4f}, err_adv:{:.4f}'
+        #                    .format(epoch + 1, num_epochs, epoch_total_loss, epoch_ae_loss, err_g_adv))
+
+        # if epoch % 500 == 0:
+        #     show_process_for_trainortest(img, output, orig_img, train_output_path + str(epoch))
+        #     epoch_loss_dict[epoch] = epoch_total_loss
+
+        #     torch.save(unet.state_dict(), checkpoint_path + '{}.pth'.format(str(epoch)))
+        #     torch.save(discriminator.state_dict(), checkpoint_path + 'netd_{}.pth'.format(str(epoch)))
+
+        #     torch.save(optimizer_u.state_dict(), checkpoint_path + 'opt_{}.pth'.format(str(epoch)))
+        #     torch.save(optimizer_d.state_dict(), checkpoint_path + 'optd_{}.pth'.format(str(epoch)))
+
+        #     torch.save(scheduler.state_dict(), checkpoint_path + 'scheduler_{}.pth'.format(str(epoch)))
 
     # TEST
     model = unet
@@ -162,17 +176,21 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
 
     test_aucs = []
+
     for normal_class in range(20):
+
         print(f"Normal Class : {normal_class}")
         args = parser.parse_args()
         config = get_config(args.config)
 
-        train_transform= transforms.Compose([
+        img_transform = transforms.Compose([
                     transforms.Resize((224, 224)),
                     transforms.ToTensor(),
             ])
+
         normal_classes = [normal_class]
-        mod = PascalVOCDataModule(batch_size=32, train_transform=train_transform, val_transform=train_transform, test_transform=train_transform, normal_classes = normal_classes)
+
+        mod = PascalVOCDataModule(batch_size=config['batch_size'], train_transform=img_transform, val_transform=img_transform, test_transform=img_transform, normal_classes = normal_classes)
         train_dataloader = mod.get_train_dataloader()
         test_dataloader = mod.get_test_dataloader()
 
