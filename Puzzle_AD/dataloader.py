@@ -181,11 +181,11 @@ class PascalVOCDataModule():
     
     def get_val_dataloader(self, batch_size=None):
         batch_size = self.batch_size if batch_size is None else batch_size
-        return DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(self.val_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers, pin_memory=True)
     
     def get_test_dataloader(self, batch_size=None):
         batch_size = self.batch_size if batch_size is None else batch_size
-        return DataLoader(self.test_dataset, batch_size=batch_size, shuffle=False, num_workers=self.num_workers, pin_memory=True)
+        return DataLoader(self.test_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers, pin_memory=True)
     
     def get_train_dataset_size(self):
         return len(self.train_dataset)
