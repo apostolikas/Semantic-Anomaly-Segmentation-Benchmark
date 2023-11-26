@@ -79,18 +79,18 @@ def test(model, target_class, perm_list, perm_cost, test_dataloader):
         labels, scores = zip(*label_score)
         labels = np.array(labels)
 
-        fpr, tpr, _ = roc_curve(labels, scores, pos_label=1)
-        roc_auc = auc(fpr, tpr)
-        roc_auc = round(roc_auc, 4)
-
-        # indx1 = labels == target_class
-        # indx2 = labels != target_class
-        # labels[indx1] = 1
-        # labels[indx2] = 0
-        # scores = np.array(scores)
-        # fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=0)
+        # fpr, tpr, _ = roc_curve(labels, scores, pos_label=1)
         # roc_auc = auc(fpr, tpr)
         # roc_auc = round(roc_auc, 4)
+
+        indx1 = labels == target_class
+        indx2 = labels != target_class
+        labels[indx1] = 1
+        labels[indx2] = 0
+        scores = np.array(scores)
+        fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=0)
+        roc_auc = auc(fpr, tpr)
+        roc_auc = round(roc_auc, 4)
         AUC[key] = roc_auc
 
     return AUC
