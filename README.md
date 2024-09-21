@@ -20,10 +20,7 @@ The benchmark currently supports a set of datasets, and efforts are ongoing to i
 - MVTec
 - Pascal VOC
 
-*(List will be updated as more datasets are incorporated. Contributions are welcome!)*
-
-## To Be Added
-This repository will go under heavy refactoring in the future and there will only be one single env.yml file and one script that calls the preferred method on the dataset of the user's choice.
+*(List will be updated as more datasets are incorporated.)*
 
 ## Getting Started
 To get started with the benchmark, follow the instructions in the respective repository folders. Use the requirements.txt files to create the environment.
