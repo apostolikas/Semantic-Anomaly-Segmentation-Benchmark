@@ -1,6 +1,6 @@
 # Semantic Anomaly Segmentation Benchmark
 
-This project aims to provide a standardized evaluation platform for anomaly segmentation methods in the field of computer vision. Anomaly segmentation is a critical task in various applications, and this repository serves as a hub for assessing the performance of different anomaly detection methods. The benchmark supports several state-of-the-art repositories, including:
+This project aims to provide a benchmark for several anomaly segmentation methods in the field of computer vision. Anomaly segmentation is a critical task in various applications, and this repository serves as a hub for assessing the performance of different anomaly detection methods. The benchmark supports several state-of-the-art repositories, including:
 
 1. KDAD ([paper](https://arxiv.org/abs/2011.11108) | [original repo](https://github.com/rohban-lab/Knowledge_Distillation_AD))
 2. RD4AD ([paper](https://arxiv.org/abs/2201.10703) | [original repo](https://github.com/hq-deng/RD4AD))
