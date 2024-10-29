@@ -2,8 +2,6 @@
 
 This repository contains code for training and evaluating the proposed method in our paper [Multiresolution Knowledge Distillation for Anomaly Detection](https://arxiv.org/pdf/2011.11108.pdf).
 
-<img src="Images/vgg_network_last.png" alt="hi" class="inline"/>
-
 ## Citation
 If you find this useful for your research, please cite the following paper:
 ``` bash
