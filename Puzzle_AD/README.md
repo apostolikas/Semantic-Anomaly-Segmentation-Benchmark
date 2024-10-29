@@ -2,8 +2,6 @@
 
 This repository contains code for training and evaluating the proposed method in our paper [Puzzle-AE: Novelty Detection in Images through Solving Puzzles](https://arxiv.org/pdf/2008.12959.pdf).
 
-<img src="Images/Method.png" alt="hi" class="inline"/>
-
 ## Citation
 If you find this useful for your research, please cite the following paper:
 ``` bash
