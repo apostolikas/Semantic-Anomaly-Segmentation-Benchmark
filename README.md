@@ -24,6 +24,21 @@ The benchmark currently supports a set of datasets, and efforts are ongoing to i
 
 *(List will be updated as more datasets are incorporated.)*
 
+## Evaluation ##
+
+The following table shows the AUROC scores of the single-class, one-vs-all, setting. * shows results reproduced by us. CSI and FITYMI will be added.
+
+|                | RDAD         | CSI  | FITYMI  | KDAD         | Puzzle AD    | MSAD         | Transformaly        | Deep SVDD  | General AD   | MKD+         |
+|----------------|--------------|-------------------|-----------------------|--------------|--------------|--------------|----------------------|------------|--------------|--------------|
+| **Backbone**   | WideRes-50   | ResNet-18        | ViT-B16-224           | VGG-16       | U-Net        | ViT-B16-224  | ViT-B16-384/224     | LeNet      | ViT-B16-224  | ViT-B16-224  |
+| **Pre-training** | Supervised | Random           | Supervised            | Supervised   | Supervised   | Supervised   | Supervised          | Supervised | Supervised   | Supervised   |
+| **CIFAR10**    | 86.1         | 94.3             | 99.1                  | 87.2         | 72.47        | 97.2         | 98.3/94.9*          | 64.81      | 99.1         | 98.6         |
+| **CIFAR100**   | -            | 89.6             | 98.1                  | 80.6         | -            | 96.4         | 97.3/93*            | -          | 98           | 97.4         |
+| **FMNIST**     | 95           | 94.2             | 80.5*                 | 94.5         | 92.6         | 94.2         | 94.4/92.7*          | -          | 94.6         | 94.4         |
+| **Pascal VOC** | 58.6         | -                | -                     | 82.8*        | 55*          | 91.8*        | 82.5*               | 56.14*     | 93.41*       | 95.4         |
+| **COCO Detection** | 47.9     | -                | -                     | 75.4*        | -            | 86.7*        | 75.4*               | -          | -            | 94.5         |
+
+
 ## Getting Started
 To get started with the benchmark, follow the instructions in the respective repository folders. Use the requirements.txt or the env.yml files to create the environment.
 
